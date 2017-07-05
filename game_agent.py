@@ -241,18 +241,18 @@ class MinimaxPlayer(IsolationPlayer):
 				# Get the game board with the move
 				forecast = game.forecast_move(move)
 				# Get the best score after the forecasted move
-				score, _ = minimax_search(forecast, depth, not minimum)
+				score, _ = minimax_search(forecast, depth)
 
 				# If the score is better than our last try, keep this move
 				# Probably a way to functionize this better
-				if minimizing and score < target_score:
+				if maximizing and score > target_score:
 					target_score = score
 					best_move = move
-				elif not minimizing and score > target_score:
+				elif not maximizing and score < target_score:
 					target_score = score
 					best_move = move
 
-			return target_score, best_move
+			return (target_score, best_move)
 
 
 		# Play the game
@@ -260,7 +260,7 @@ class MinimaxPlayer(IsolationPlayer):
 			raise SearchTimeout()"""
 
 		# Only need the second half of the tuple returned from minimax_search
-		return self.minimax_search(game, depth)[1]
+		return minimax_search(game, depth)[1]
 
 
 class AlphaBetaPlayer(IsolationPlayer):
