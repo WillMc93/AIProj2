@@ -57,15 +57,15 @@ def custom_score_2(game, player):
 		The heuristic value of the current game state to the specified player.
 	"""
 	if game.is_loser(player):
-        return float("-inf")
+		return float("-inf")
 
-    if game.is_winner(player):
-        return float("inf")
+	if game.is_winner(player):
+		return float("inf")
 
-    own_moves = len(game.get_legal_moves(player))
-    opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
+	own_moves = len(game.get_legal_moves(player))
+	opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
 
-    return float(own_moves - opp_moves)
+	return float(own_moves - opp_moves)
 
 
 def custom_score_3(game, player):
@@ -166,14 +166,15 @@ class MinimaxPlayer(IsolationPlayer):
 		try:
 			# The try/except block will automatically catch the exception
 			# raised when the timer is about to expire.
-			return self.minimax(game, self.search_depth)
+			_, best_move = self.minimax(game, self.search_depth)
+			return best_move
 
 		except SearchTimeout:
 			pass  # Handle any actions required after timeout as needed
 
 		# Return the best move from the last completed search iteration
 		return best_move
-	
+
 	def minimax(self, game, depth, maximize=True):
 		"""Implement depth-limited minimax search algorithm as described in
 		the lectures.
@@ -230,31 +231,27 @@ class MinimaxPlayer(IsolationPlayer):
 		best_move = (-1,-1)
 
 		for move in legal_moves:
-			# Initialize score
+			# Get the score for this branch or continue walking the tree
 			score = None
 			if depth == 1:
 				# If at end of search tree, get score for this move
+				# This is the terminal test
 				score = self.score(game.forecast_move(move), self)
+			#	pdb.set_trace()
+			else:
+				# If not at the end of the search tree, then we need to dig deeper.
+				# Also we must invert maximize, such that the next layer is the opposite optimization of this one.
+				score, _ = self.minimax(game.forecast_move(move), depth-1, maximize=not maximize)
 
+			# Set best_score and best_move if score is better than score
 			if maximize:
-				if not score:
-					# If not at the end of the search tree, then dig deeper
-					score, _ = self.minimax(game.forecast_move(move), depth-1, maximize=False)
-
 				if score > best_score:
 					best_score, best_move = score, move
-
-				return best_score, best_move
-
 			else:
-				if not score:
-					# If not at end of search tree, then dig deeper
-					score, _ = self.minimax(game.forecast_move(move), depth-1, maximize=True)
-
 				if score < best_score: # score should be set by now so this won't short-circuit
 					best_score, best_move = score, move
 
-				return best_score, best_move
+			return best_score, best_move
 
 		# Shouldn't be reached
 		raise NotImplementedError
@@ -265,7 +262,7 @@ class AlphaBetaPlayer(IsolationPlayer):
 	search with alpha-beta pruning. You must finish and test this player to
 	make sure it returns a good move before the search time limit expires.
 	"""
-	
+
 	def get_move(self, game, time_left, maximize=True):
 		"""Search for the best move from the available legal moves and return a
 		result before the time limit expires.
@@ -311,7 +308,8 @@ class AlphaBetaPlayer(IsolationPlayer):
 		try:
 			# The try/except block will automatically catch the exception
 			# raised when the timer is about to expire.
-			return self.alphabeta(game, self.search_depth)
+			_, best_move = self.alphabeta(game, self.search_depth)
+			return best_move
 
 		except SearchTimeout:
 			pass  # Handle any actions required after timeout as needed
@@ -349,7 +347,7 @@ class AlphaBetaPlayer(IsolationPlayer):
 
 		maximize : bool
 			Sets this search layer to maxmize (True) or minimize (False).
-			
+
 		Returns
 		-------
 		(int, int)
@@ -381,17 +379,18 @@ class AlphaBetaPlayer(IsolationPlayer):
 		best_move = (-1,-1)
 
 		for move in legal_moves:
-			# Initialize score
+			# Get the score for this branch or continue walking the tree
 			score = None
 			if depth == 1:
 				# If at end of search tree, get score for this move
 				score = self.score(game.forecast_move(move), self)
+			#	pdb.set_trace()
+			else:
+				# If not at the end of the search tree, then we need to dig deeper
+				score, _ = self.minimax(game.forecast_move(move), depth-1, maximize=not maximize)
 
+			# Set best_score and best_move if score is better than score
 			if maximize:
-				if not score:
-					# If not at end of search tree, then dig deeper
-					score, _ = self.alphabeta(game.forecast_move(move), depth-1, alpha, beta, maximize=False)
-
 				if score >= beta:
 					return score, move
 
@@ -400,24 +399,17 @@ class AlphaBetaPlayer(IsolationPlayer):
 
 				# Adjust alpha if applicable
 				alpha = max(alpha, best_score)
-
-				return best_score, best_move
-
 			else:
-				if not score:
-					# If not at end of search tree, then dig deeper
-					score, _ = self.alphabeta(game.forecast_move(move), depth-1, alpha, beta, maximize=True)
-
 				if score <= alpha:
 					return score, move
 
-				if score < best_score: # score should be set by now, so this shouldn't short circuit
+				if score < best_score:
 					best_score, best_move = score, move
 
 				# Adjust beta if applicable
 				beta = min(beta, best_score)
 
-				return best_score, best_move
+			return best_score, best_move
 
 		# Shouldn't be reached
 		raise NotImplementedError
