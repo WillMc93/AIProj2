@@ -175,17 +175,77 @@ class MinimaxPlayer(IsolationPlayer):
 		# Return the best move from the last completed search iteration
 		return best_move
 
-	def minimax(self, game, depth, maximize=True):
-		"""Implement depth-limited minimax search algorithm as described in
-		the lectures.
+	def search_layer(self, game, depth, maximize=True):
+		"""Implementation of the depth-limited minimax search algorithm as described in
+		the lectures. This function recursively adds search layers.
 
 		This should be a modified version of MINIMAX-DECISION in the AIMA text.
 		https://github.com/aimacode/aima-pseudocode/blob/master/md/Minimax-Decision.md
 
-		**********************************************************************
-			You MAY add additional methods to this class, or define helper
-				 functions to implement the required functionality.
-		**********************************************************************
+		Parameters
+		----------
+		game : isolation.Board
+			An instance of the Isolation game `Board` class representing the
+			current game state
+
+		depth : int
+			Depth is an integer representing the maximum number of plies to
+			search in the game tree before aborting
+
+		maximize : bool
+			Set this search layer to maximize (True) or minimize (False).
+
+		Returns
+		-------
+		(int, int)
+			The board coordinates of the best move found in the current search;
+			(-1, -1) if there are no legal moves"""
+		if self.time_left() < self.TIMER_THRESHOLD:
+			raise SearchTimeout()
+			return None, (-1,-1)
+
+		# Set best_score such that we can compare first iteration
+		best_score = float('-inf') if maximize else float('inf')
+		# Set best_move to the 'null' move
+		best_move = (-1,-1)
+
+		# Return error state if there are no legal moves
+		if not game.get_legal_moves():
+			return game.utility(self), (-1,-1)
+
+		for move in game.get_legal_moves():
+			# Get the score for this branch or continue walking the tree
+			score = None
+			if depth == 1:
+				# If at end of search tree, get score for this move
+				score = self.score(game.forecast_move(move), self)
+			else:
+				# If not at the end of the search tree, then we need to dig deeper.
+				# Also we must invert maximize, such that the next layer is the opposite optimization of this one.
+				print(depth)
+				score, _ = self.search_layer(game.forecast_move(move), depth-1, maximize=not maximize)
+
+			# Set best_score and best_move if score is better than score
+			if score:
+				if maximize:
+					if score > best_score:
+						best_score, best_move = score, move
+				else:
+					if score < best_score: # score should be set by now so this won't short-circuit
+						best_score, best_move = score, move
+			else:
+				break
+
+		return best_score, best_move
+
+
+
+	def minimax(self, game, depth, maximize=True):
+		"""This class is a wrapper for search_layer which takes the output and formats
+		it for udacity submit.
+
+		This should be a modified version of MINIMAX-DECISION in the AIMA text.
+		https://github.com/aimacode/aima-pseudocode/blob/master/md/Minimax-Decision.md
 
 		Parameters
 		----------
@@ -220,41 +280,30 @@ class MinimaxPlayer(IsolationPlayer):
 		if self.time_left() < self.TIMER_THRESHOLD:
 			raise SearchTimeout()
 
-		legal_moves = game.get_legal_moves()
-		# Return error state if there are no legal moves
-		if not legal_moves:
-			return game.utility(self), (-1,-1)
 
-		# Set best_score such that we can compare first iteration
-		best_score = float('-inf') if maximize else float('inf')
-		# Set best_move to the 'null' move
-		best_move = (-1,-1)
+		# To keep track of the moves, declare the moves_list dictionary.
+		# This dictionary will use the score obtained from self.search_layer()
+		# as the key and the move as the value so that we may sort by score.
+		moves_list = dict()
 
-		for move in legal_moves:
-			# Get the score for this branch or continue walking the tree
-			score = None
-			if depth == 1:
-				# If at end of search tree, get score for this move
-				# This is the terminal test
-				score = self.score(game.forecast_move(move), self)
-			#	pdb.set_trace()
-			else:
-				# If not at the end of the search tree, then we need to dig deeper.
-				# Also we must invert maximize, such that the next layer is the opposite optimization of this one.
-				score, _ = self.minimax(game.forecast_move(move), depth-1, maximize=not maximize)
+		if not game.get_legal_moves():
+			return game.utility(self)
 
-			# Set best_score and best_move if score is better than score
-			if maximize:
-				if score > best_score:
-					best_score, best_move = score, move
-			else:
-				if score < best_score: # score should be set by now so this won't short-circuit
-					best_score, best_move = score, move
+		for move in game.get_legal_moves():
+			# Run search. Pram maximize must be flipped because next layer will always
+			# be minimizing from this level
+			score, _ = self.search_layer(game.forecast_move(move), depth-1, maximize=not maximize)
 
-			return best_score, best_move
+			# Add score as key and move as value to the moves_list
+			moves_list[score] = move
 
-		# Shouldn't be reached
-		raise NotImplementedError
+		# Sort moves_list's keys (putting the max score at the end of the list)
+		# and get the max
+		max_score = sorted(moves_list.keys())[-1]
+
+		# Return the max score.
+		return moves_list[max_score]
+
 
 
 class AlphaBetaPlayer(IsolationPlayer):
