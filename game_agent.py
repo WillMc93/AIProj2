@@ -68,7 +68,6 @@ def custom_score_2(game, player):
     return float(own_moves - opp_moves)
 
 
-
 def custom_score_3(game, player):
 	"""Calculate the heuristic value of a game state from the point of view
 	of the given player.
@@ -174,7 +173,7 @@ class MinimaxPlayer(IsolationPlayer):
 
 		# Return the best move from the last completed search iteration
 		return best_move
-
+	
 	def minimax(self, game, depth, maximize=True):
 		"""Implement depth-limited minimax search algorithm as described in
 		the lectures.
@@ -266,7 +265,7 @@ class AlphaBetaPlayer(IsolationPlayer):
 	search with alpha-beta pruning. You must finish and test this player to
 	make sure it returns a good move before the search time limit expires.
 	"""
-
+	
 	def get_move(self, game, time_left, maximize=True):
 		"""Search for the best move from the available legal moves and return a
 		result before the time limit expires.
@@ -350,8 +349,7 @@ class AlphaBetaPlayer(IsolationPlayer):
 
 		maximize : bool
 			Sets this search layer to maxmize (True) or minimize (False).
-
-
+			
 		Returns
 		-------
 		(int, int)
