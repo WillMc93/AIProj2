@@ -177,9 +177,10 @@ class MinimaxPlayer(IsolationPlayer):
 
 	def search_layer(self, game, depth, maximize=True):
 		"""Implementation of the depth-limited minimax search algorithm as described in
-		the lectures. This function recursively adds search layers.
+		the lectures. This function recursively adds search layers serving
+		as either min_value or max_value as described in the AIMA text depending on the
+		value of maximize.
 
-		This should be a modified version of MINIMAX-DECISION in the AIMA text.
 		https://github.com/aimacode/aima-pseudocode/blob/master/md/Minimax-Decision.md
 
 		Parameters
@@ -200,47 +201,34 @@ class MinimaxPlayer(IsolationPlayer):
 		(int, int)
 			The board coordinates of the best move found in the current search;
 			(-1, -1) if there are no legal moves"""
+
 		if self.time_left() < self.TIMER_THRESHOLD:
 			raise SearchTimeout()
-			return None, (-1,-1)
-
-		# Set best_score such that we can compare first iteration
-		best_score = float('-inf') if maximize else float('inf')
-		# Set best_move to the 'null' move
-		best_move = (-1,-1)
 
 		# Return error state if there are no legal moves
 		if not game.get_legal_moves():
-			return game.utility(self), (-1,-1)
+			return self.score(game, self)
 
+		# If at end of search tree, return the score for this move
+		if depth == 0:
+			return self.score(game, self)
+
+		# Initialize score (v in AIMA text) variable to +/- infinity depending on the value of maximize
+		score = float('-inf') if maximize else float('inf')
+		# Set the optimization function depending on the value of maximize
+		optimize = max if maximize else min
+
+		# Walk the tree
 		for move in game.get_legal_moves():
-			# Get the score for this branch or continue walking the tree
-			score = None
-			if depth == 1:
-				# If at end of search tree, get score for this move
-				score = self.score(game.forecast_move(move), self)
-			else:
-				# If not at the end of the search tree, then we need to dig deeper.
-				# Also we must invert maximize, such that the next layer is the opposite optimization of this one.
-				print(depth)
-				score, _ = self.search_layer(game.forecast_move(move), depth-1, maximize=not maximize)
+			# To walk the tree we must decrement depth and inverse maximize.
+			score = optimize(score, self.search_layer(game.forecast_move(move), depth-1, maximize=not maximize))
 
-			# Set best_score and best_move if score is better than score
-			if score:
-				if maximize:
-					if score > best_score:
-						best_score, best_move = score, move
-				else:
-					if score < best_score: # score should be set by now so this won't short-circuit
-						best_score, best_move = score, move
-			else:
-				break
-
-		return best_score, best_move
+		# Return the best score
+		return score
 
 
 
-	def minimax(self, game, depth, maximize=True):
+	def minimax(self, game, depth):
 		"""This class is a wrapper for search_layer which takes the output and formats
 		it for udacity submit.
 
@@ -281,28 +269,25 @@ class MinimaxPlayer(IsolationPlayer):
 			raise SearchTimeout()
 
 
-		# To keep track of the moves, declare the moves_list dictionary.
+		# To keep track of the moves, declare the moves dictionary.
 		# This dictionary will use the score obtained from self.search_layer()
 		# as the key and the move as the value so that we may sort by score.
-		moves_list = dict()
-
-		if not game.get_legal_moves():
-			return game.utility(self)
+		moves_dict = dict()
 
 		for move in game.get_legal_moves():
-			# Run search. Pram maximize must be flipped because next layer will always
+			# Run search. Param maximize must be False because next layer will always
 			# be minimizing from this level
-			score, _ = self.search_layer(game.forecast_move(move), depth-1, maximize=not maximize)
+			score = self.search_layer(game.forecast_move(move), depth-1, maximize=False)
 
-			# Add score as key and move as value to the moves_list
-			moves_list[score] = move
+			# Add score as key and move as value to the moves_dict
+			moves_dict[score] = move
 
 		# Sort moves_list's keys (putting the max score at the end of the list)
 		# and get the max
-		max_score = sorted(moves_list.keys())[-1]
+		max_score = sorted(moves_dict.keys())[-1]
 
-		# Return the max score.
-		return moves_list[max_score]
+		# Return the move with the max score.
+		return moves_dict[max_score]
 
 
 
