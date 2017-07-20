@@ -1,8 +1,10 @@
 from isolation import Board
 from sample_players import GreedyPlayer
 from game_agent import MinimaxPlayer
+from game_agent import AlphaBetaPlayer
 
-p1 = MinimaxPlayer()
+p1 = AlphaBetaPlayer()
+#p2 = MinimaxPlayer()
 p2 = GreedyPlayer()
 game = Board(p1, p2)
 
