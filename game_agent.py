@@ -166,7 +166,7 @@ class MinimaxPlayer(IsolationPlayer):
 		try:
 			# The try/except block will automatically catch the exception
 			# raised when the timer is about to expire.
-			_, best_move = self.minimax(game, self.search_depth)
+			best_move = self.minimax(game, self.search_depth)
 			return best_move
 
 		except SearchTimeout:
@@ -198,14 +198,15 @@ class MinimaxPlayer(IsolationPlayer):
 
 		Returns
 		-------
-		(int, int)
-			The board coordinates of the best move found in the current search;
-			(-1, -1) if there are no legal moves"""
+		float
+			The score of the best move found.
+		"""
 
 		if self.time_left() < self.TIMER_THRESHOLD:
 			raise SearchTimeout()
+			#return self.score(game, self)
 
-		# Return error state if there are no legal moves
+		# Return the score for this game if there are no legal moves
 		if not game.get_legal_moves():
 			return self.score(game, self)
 
@@ -221,6 +222,7 @@ class MinimaxPlayer(IsolationPlayer):
 		# Walk the tree
 		for move in game.get_legal_moves():
 			# To walk the tree we must decrement depth and inverse maximize.
+			print(game.forecast_move(move).to_string())
 			score = optimize(score, self.search_layer(game.forecast_move(move), depth-1, maximize=not maximize))
 
 		# Return the best score
@@ -229,8 +231,8 @@ class MinimaxPlayer(IsolationPlayer):
 
 
 	def minimax(self, game, depth):
-		"""This class is a wrapper for search_layer which takes the output and formats
-		it for udacity submit.
+		"""This function begins the search for the best move.
+
 
 		This should be a modified version of MINIMAX-DECISION in the AIMA text.
 		https://github.com/aimacode/aima-pseudocode/blob/master/md/Minimax-Decision.md
@@ -290,7 +292,6 @@ class MinimaxPlayer(IsolationPlayer):
 		return moves_dict[max_score]
 
 
-
 class AlphaBetaPlayer(IsolationPlayer):
 	"""Game-playing agent that chooses a move using iterative deepening minimax
 	search with alpha-beta pruning. You must finish and test this player to
@@ -327,12 +328,11 @@ class AlphaBetaPlayer(IsolationPlayer):
 			Board coordinates corresponding to a legal move; may return
 			(-1, -1) if there are no available legal moves.
 		"""
-		self.time_left = time_left
-
 		# TODO: finish this function!
 		# I mean . . . alright.
 		# Ctrl+C, Ctrl+V, type-type-type. Yep, that looks good.
 		# Better add a snarky comment for good measure
+
 		self.time_left = time_left
 
 		# Initialize the best move so that this function returns something
@@ -342,7 +342,7 @@ class AlphaBetaPlayer(IsolationPlayer):
 		try:
 			# The try/except block will automatically catch the exception
 			# raised when the timer is about to expire.
-			_, best_move = self.alphabeta(game, self.search_depth)
+			best_move = self.alphabeta(game, self.search_depth)
 			return best_move
 
 		except SearchTimeout:
@@ -351,8 +351,71 @@ class AlphaBetaPlayer(IsolationPlayer):
 		# Return the best move from the last completed search iteration
 		return best_move
 
-	def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximize=True):
-		"""Implement depth-limited minimax search with alpha-beta pruning as
+	def search_layer(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximize=True):
+		"""Implementation of the depth-limited alphabeta search algorithm as described in
+		the lectures. This function recursively adds search layers serving
+		as either min_value or max_value as described in the AIMA text depending on the
+		value of maximize.
+
+		https://github.com/aimacode/aima-pseudocode/blob/master/md/Alpha-Beta-Search.md
+
+		Parameters
+		----------
+		game : isolation.Board
+			An instance of the Isolation game `Board` class representing the
+			current game state
+
+		depth : int
+			Depth is an integer representing the maximum number of plies to
+			search in the game tree before aborting
+
+		maximize : bool
+			Set this search layer to maximize (True) or minimize (False).
+
+		Returns
+		-------
+		float
+			The score of the best move found.
+		"""
+
+		if self.time_left() < self.TIMER_THRESHOLD:
+			raise SearchTimeout()
+			#return self.score(game, self)
+
+		# Return the score for this game if there are no legal moves
+		if not game.get_legal_moves():
+			return self.score(game, self)
+
+		# If at end of search tree, return the score for this move
+		if depth == 0:
+			return self.score(game, self)
+
+		# Initialize score (v in AIMA text) variable to +/- infinity depending on the value of maximize
+		score = float('-inf') if maximize else float('inf')
+		# Set the optimization function depending on the value of maximize
+		optimize = max if maximize else min
+
+		# Walk the tree
+		for move in game.get_legal_moves():
+			# To walk the tree we must decrement depth and inverse maximize.
+			score = optimize(score, self.search_layer(game.forecast_move(move), depth-1, alpha, beta, maximize=not maximize))
+
+			# Check score against beta/alpha as applicable depending on value of maximize
+			if maximize:
+				if score >= beta:
+					return score
+				alpha = max(alpha, score)
+			else:
+				if score <= alpha:
+					return score
+				beta = min(beta, score)
+
+		# Return the best score
+		return score
+
+
+	def alphabeta(self, game, depth):
+		"""Implement iterative-deeping, depth-limited minimax search with alpha-beta pruning as
 		described in the lectures.
 
 		This should be a modified version of ALPHA-BETA-SEARCH in the AIMA text
@@ -402,48 +465,23 @@ class AlphaBetaPlayer(IsolationPlayer):
 		if self.time_left() < self.TIMER_THRESHOLD:
 			raise SearchTimeout()
 
-		legal_moves = game.get_legal_moves()
-		# Return error state if there are no legal moves
-		if not legal_moves:
-			return game.utility(self), (-1,-1)
+		# To keep track of the moves, declare the moves dictionary.
+		# This dictionary will use the score obtained from self.search_layer()
+		# as the key and the move as the value so that we may sort by score.
+		moves_dict = dict()
 
-		# Set best_score such that we can compare first iteration
-		best_score = float('-inf') if maximize else float('inf')
-		# Set best_move to the 'null' move
-		best_move = (-1,-1)
+		for move in game.get_legal_moves():
+			# Run search. Param maximize must be True because next layer will always
+			# be maximizing from this level
+			# NOTE: this is the opposite setup of Minimax
+			score = self.search_layer(game.forecast_move(move), depth-1, maximize=True)
 
-		for move in legal_moves:
-			# Get the score for this branch or continue walking the tree
-			score = None
-			if depth == 1:
-				# If at end of search tree, get score for this move
-				score = self.score(game.forecast_move(move), self)
-			#	pdb.set_trace()
-			else:
-				# If not at the end of the search tree, then we need to dig deeper
-				score, _ = self.minimax(game.forecast_move(move), depth-1, maximize=not maximize)
+			# Add score as key and move as value to the moves_dict
+			moves_dict[score] = move
 
-			# Set best_score and best_move if score is better than score
-			if maximize:
-				if score >= beta:
-					return score, move
+		# Sort moves_list's keys (putting the max score at the end of the list)
+		# and get the max
+		max_score = sorted(moves_dict.keys())[-1]
 
-				if score > best_score:
-					best_score, best_move = score, move
-
-				# Adjust alpha if applicable
-				alpha = max(alpha, best_score)
-			else:
-				if score <= alpha:
-					return score, move
-
-				if score < best_score:
-					best_score, best_move = score, move
-
-				# Adjust beta if applicable
-				beta = min(beta, best_score)
-
-			return best_score, best_move
-
-		# Shouldn't be reached
-		raise NotImplementedError
+		# Return the move with the max score.
+		return moves_dict[max_score]
