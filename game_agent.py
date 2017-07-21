@@ -268,7 +268,7 @@ class MinimaxPlayer(IsolationPlayer):
 		if self.time_left() < self.TIMER_THRESHOLD:
 			raise SearchTimeout()
 
-		if not game.get_legal_moves:
+		if not game.get_legal_moves():
 			return (-1, -1)
 
 		# To keep track of the moves, declare the moves dictionary.
