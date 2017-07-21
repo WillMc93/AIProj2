@@ -176,7 +176,6 @@ class MinimaxPlayer(IsolationPlayer):
 		# Return the best move from the last completed search iteration
 		return best_move
 
-
 	def search_layer(self, game, depth, maximize=True):
 		"""Implementation of the depth-limited minimax search algorithm as described in
 		the lectures. This function recursively adds search layers serving
@@ -228,7 +227,6 @@ class MinimaxPlayer(IsolationPlayer):
 
 		# Return the best score
 		return score
-
 
 	def minimax(self, game, depth):
 		"""This function begins the search for the best move.
@@ -344,7 +342,8 @@ class AlphaBetaPlayer(IsolationPlayer):
 		try:
 			# The try/except block will automatically catch the exception
 			# raised when the timer is about to expire.
-			best_move = self.iterative_deepening(self.alphabeta, game)
+			#best_move = self.iterative_deepening(self.alphabeta, game)
+			best_move = self.alphabeta(game, 3)
 
 		except SearchTimeout:
 			pass  # Handle any actions required after timeout as needed
@@ -352,16 +351,12 @@ class AlphaBetaPlayer(IsolationPlayer):
 		# Return the best move from the last completed search iteration
 		return best_move
 
-
 	def alphabeta(self, game, depth):
 		"""Implement iterative-deeping, depth-limited minimax search with alpha-beta pruning as
 		described in the lectures.
 
 		This is a modified version of ALPHA-BETA-SEARCH in the AIMA text
 		https://github.com/aimacode/aima-pseudocode/blob/master/md/Alpha-Beta-Search.md
-
-		This function also implements the ITERATIVE-DEEPENING-SEARCH in the AIMA text
-		https://github.com/aimacode/aima-psuedocode/blob/master/md/Iterative-Deepening-Search.md
 
 		Parameters
 		----------
@@ -415,14 +410,11 @@ class AlphaBetaPlayer(IsolationPlayer):
 		# Return the move with the max score.
 		return moves_dict[max_score]
 
-
 	def search_layer(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximize=True):
 		"""Implementation of the depth-limited alphabeta search algorithm as described in
 		the lectures. This function recursively adds search layers serving
 		as either min_value or max_value as described in the AIMA text depending on the
 		value of maximize.
-
-		https://github.com/aimacode/aima-pseudocode/blob/master/md/Alpha-Beta-Search.md
 
 		Parameters
 		----------
@@ -445,7 +437,6 @@ class AlphaBetaPlayer(IsolationPlayer):
 
 		if self.time_left() < self.TIMER_THRESHOLD:
 			raise SearchTimeout()
-			#return self.score(game, self)
 
 		# Return the score for this game if there are no legal moves
 		if not game.get_legal_moves():
@@ -478,8 +469,12 @@ class AlphaBetaPlayer(IsolationPlayer):
 		# Return the best score
 		return score
 
-
 	def iterative_deepening(self, search_function, game):
+		"""
+		This function also implements the ITERATIVE-DEEPENING-SEARCH in the AIMA text
+		https://github.com/aimacode/aima-psuedocode/blob/master/md/Iterative-Deepening-Search.md
+
+		"""
 		# Not sure if really necessary, but directions said all helper functions and is helper function. So . . .
 		if self.time_left() < self.TIMER_THRESHOLD:
 			raise SearchTimeout()
