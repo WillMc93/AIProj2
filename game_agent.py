@@ -392,7 +392,7 @@ class AlphaBetaPlayer(IsolationPlayer):
 		if self.time_left() < self.TIMER_THRESHOLD:
 			raise SearchTimeout()
 
-		if not game.get_legal_moves:
+		if not game.get_legal_moves():
 			return (-1,-1)
 
 		# To keep track of the moves, declare the moves dictionary.
@@ -411,7 +411,6 @@ class AlphaBetaPlayer(IsolationPlayer):
 
 		# Sort moves_list's keys (putting the max score at the end of the list)
 		# and get the max
-		if len(moves_dict.keys())
 		max_score = sorted(moves_dict.keys())[-1]
 
 		# Return the move with the max score.
