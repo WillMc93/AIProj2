@@ -224,7 +224,6 @@ class MinimaxPlayer(IsolationPlayer):
 		# Walk the tree
 		for move in game.get_legal_moves():
 			# To walk the tree we must decrement depth and inverse maximize.
-			print(game.forecast_move(move).to_string())
 			score = optimize(score, self.search_layer(game.forecast_move(move), depth-1, maximize=not maximize))
 
 		# Return the best score
