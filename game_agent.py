@@ -123,6 +123,30 @@ class IsolationPlayer:
 		self.time_left = None
 		self.TIMER_THRESHOLD = timeout
 
+	def iterative_deepening(self, search_function, game):
+		"""
+		This function generalizes the ITERATIVE-DEEPENING-SEARCH from the AIMA text
+		https://github.com/aimacode/aima-psuedocode/blob/master/md/Iterative-Deepening-Search.md
+
+		"""
+		# Not sure if really necessary, but directions said all helper functions and is helper function. So . . .
+		if self.time_left() < self.TIMER_THRESHOLD:
+			raise SearchTimeout()
+
+		# Initialize depth to start very shallow
+		depth = 1
+
+		# Initialize best_move to the 'null' move
+		best_move = (-1, -1)
+		try:
+			while True:
+				best_move = search_function(game, depth)
+				depth += 1
+		except SearchTimeout:
+			pass
+
+		return best_move
+
 
 class MinimaxPlayer(IsolationPlayer):
 	"""Game-playing agent that chooses a move using depth-limited minimax
@@ -339,11 +363,14 @@ class AlphaBetaPlayer(IsolationPlayer):
 		# in case the search fails due to timeout
 		best_move = (-1, -1)
 
+		depth = 1
 		try:
 			# The try/except block will automatically catch the exception
 			# raised when the timer is about to expire.
 			#best_move = self.iterative_deepening(self.alphabeta, game)
-			best_move = self.alphabeta(game, 3)
+			while True:
+				best_move = self.alphabeta(game, depth)
+				depth += 1
 
 		except SearchTimeout:
 			pass  # Handle any actions required after timeout as needed
@@ -468,27 +495,3 @@ class AlphaBetaPlayer(IsolationPlayer):
 
 		# Return the best score
 		return score
-
-	def iterative_deepening(self, search_function, game):
-		"""
-		This function also implements the ITERATIVE-DEEPENING-SEARCH in the AIMA text
-		https://github.com/aimacode/aima-psuedocode/blob/master/md/Iterative-Deepening-Search.md
-
-		"""
-		# Not sure if really necessary, but directions said all helper functions and is helper function. So . . .
-		if self.time_left() < self.TIMER_THRESHOLD:
-			raise SearchTimeout()
-
-		# Initialize depth to start very shallow
-		depth = 1
-
-		# Initialize best_move to the 'null' move
-		best_move = (-1, -1)
-		try:
-			while True:
-				best_move = search_function(game, depth)
-				depth += 1
-		except SearchTimeout:
-			pass
-
-		return best_move
