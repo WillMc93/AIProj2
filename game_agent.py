@@ -416,26 +416,20 @@ class AlphaBetaPlayer(IsolationPlayer):
 		if not game.get_legal_moves():
 			return (-1,-1)
 
-		# To keep track of the moves, declare the moves dictionary.
-		# This dictionary will use the score obtained from self.search_layer()
-		# as the key and the move as the value so that we may sort by score.
-		moves_dict = dict()
+		# To keep track of the best score, move combo declare a tuple of (score, move)
+		besties = (float('-inf'), (-1,-1))
 
 		for move in game.get_legal_moves():
 			# Run search. Param maximize must be True because next layer will always
 			# be maximizing from this level
 			# NOTE: this is the opposite setup of Minimax
-			score = self.search_layer(game.forecast_move(move), depth-1, maximize=True)
+			score = self.search_layer(game.forecast_move(move), depth-1, maximize=False)
 
-			# Add score as key and move as value to the moves_dict
-			moves_dict[score] = move
-
-		# Sort moves_list's keys (putting the max score at the end of the list)
-		# and get the max
-		max_score = sorted(moves_dict.keys())[-1]
+			if score > besties[0]:
+				besties = (score, move)
 
 		# Return the move with the max score.
-		return moves_dict[max_score]
+		return besties[1]
 
 	def search_layer(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximize=True):
 		"""Implementation of the depth-limited alphabeta search algorithm as described in
