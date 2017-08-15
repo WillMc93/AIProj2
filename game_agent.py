@@ -373,10 +373,9 @@ class AlphaBetaPlayer(IsolationPlayer):
 				depth += 1
 
 		except SearchTimeout:
-			pass  # Handle any actions required after timeout as needed
+			# Return the best move from the last completed search iteration
+			return best_move
 
-		# Return the best move from the last completed search iteration
-		return best_move
 
 	def alphabeta(self, game, depth):
 		"""Implement iterative-deeping, depth-limited minimax search with alpha-beta pruning as
@@ -416,76 +415,63 @@ class AlphaBetaPlayer(IsolationPlayer):
 		if not game.get_legal_moves():
 			return (-1,-1)
 
+		def max_value(game, depth, alpha=float("-inf"), beta=float("inf")):
+			if self.time_left() < self.TIMER_THRESHOLD:
+				raise SearchTimeout()
+
+			if not game.get_legal_moves():
+				return self.score(game, self)
+
+			if depth == 0:
+				return self.score(game, self)
+
+			score = float("-inf")
+			for move in game.get_legal_moves():
+				score = max(score, min_value(game.forecast_move(move), depth-1, alpha=alpha, beta=beta))
+
+				if score >= beta:
+					return score
+
+				alpha = max(alpha, score)
+
+			return score
+
+		def min_value(game, depth, alpha=float("-inf"), beta=float("inf")):
+			if self.time_left() < self.TIMER_THRESHOLD:
+				raise SearchTimeout()
+
+			if not game.get_legal_moves():
+				return self.score(game, self)
+
+			if depth == 0:
+				return self.score(game, self)
+
+			score = float("inf")
+			for move in game.get_legal_moves():
+				score = min(score, max_value(game.forecast_move(move), depth-1, alpha=alpha, beta=beta))
+
+				if score <= alpha:
+					return score
+
+				beta = min(beta, score)
+
+			return score
+
 		# To keep track of the best score, move combo declare a tuple of (score, move)
-		besties = (float('-inf'), (-1,-1))
+		besties = (float("-inf"), (-1,-1))
+		# Def alpha for first max layer
+		alpha = float("-inf")
 
 		for move in game.get_legal_moves():
 			# Run search. Param maximize must be True because next layer will always
 			# be maximizing from this level
 			# NOTE: this is the opposite setup of Minimax
-			score = self.search_layer(game.forecast_move(move), depth-1, maximize=False)
+			score = min_value(game.forecast_move(move), depth-1, alpha=alpha)
 
 			if score > besties[0]:
 				besties = (score, move)
 
+			alpha = max(alpha, score)
+
 		# Return the move with the max score.
 		return besties[1]
-
-	def search_layer(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximize=True):
-		"""Implementation of the depth-limited alphabeta search algorithm as described in
-		the lectures. This function recursively adds search layers serving
-		as either min_value or max_value as described in the AIMA text depending on the
-		value of maximize.
-
-		Parameters
-		----------
-		game : isolation.Board
-			An instance of the Isolation game `Board` class representing the
-			current game state
-
-		depth : int
-			Depth is an integer representing the maximum number of plies to
-			search in the game tree before aborting
-
-		maximize : bool
-			Set this search layer to maximize (True) or minimize (False).
-
-		Returns
-		-------
-		float
-			The score of the best move found.
-		"""
-
-		if self.time_left() < self.TIMER_THRESHOLD:
-			raise SearchTimeout()
-
-		# Return the score for this game if there are no legal moves
-		if not game.get_legal_moves():
-			return self.score(game, self)
-
-		# If at end of search tree, return the score for this move
-		if depth == 0:
-			return self.score(game, self)
-
-		# Initialize score (v in AIMA text) variable to +/- infinity depending on the value of maximize
-		score = float('-inf') if maximize else float('inf')
-		# Set the optimization function depending on the value of maximize
-		optimize = max if maximize else min
-
-		# Walk the tree
-		for move in game.get_legal_moves():
-			# To walk the tree we must decrement depth and inverse maximize.
-			score = optimize(score, self.search_layer(game.forecast_move(move), depth-1, alpha, beta, maximize=not maximize))
-
-			# Check score against beta/alpha as applicable depending on value of maximize
-			if maximize:
-				if score >= beta:
-					return score
-				alpha = max(alpha, score)
-			else:
-				if score <= alpha:
-					return score
-				beta = min(beta, score)
-
-		# Return the best score
-		return score
