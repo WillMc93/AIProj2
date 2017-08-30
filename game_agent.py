@@ -6,7 +6,7 @@ class SearchTimeout(Exception):
 	pass
 
 
-def custom_score(game, player):
+def custom_score(game, player) -> float:
 	"""This heuristic just maximizes the number of moves for current player over opponents.
 
 	Parameters
@@ -24,7 +24,6 @@ def custom_score(game, player):
 	float
 		The heuristic value of the current game state to the specified player.
 	"""
-	# TODO: finish this function!
 	if game.is_loser(player):
 		return float('-inf')
 
@@ -39,7 +38,7 @@ def custom_score(game, player):
 	return float(own_moves - opp_moves)
 
 
-def custom_score_2(game, player):
+def custom_score_2(game, player) -> float:
 	"""This heuristic rewards moves that increase distance from the corner and decrease the opponents distance to the corners.
 
 
@@ -65,7 +64,8 @@ def custom_score_2(game, player):
 		return float('inf')
 
 	# Define the corners
-	corners = [(0, 0), (0, game.width - 1), (game.height - 1, 0), (game.height - 1, game.width - 1)]
+	corners = [(0, 0), (0, game.width - 1),
+			   (game.height - 1, 0), (game.height - 1, game.width - 1)]
 
 	# Get each players moves
 	own_moves = game.get_legal_moves(player)
@@ -80,10 +80,11 @@ def custom_score_2(game, player):
 	game_state = min(game.width * game.height / len(game.get_blank_spaces()), 6)
 
 	# Return the difference in scores + the scaled difference in moves that result in corners.
-	return float(len(own_moves) - len(opp_moves) + game_state * (opp_corners - own_corners))
+	return float(len(own_moves) - len(opp_moves) + \
+				 game_state * (opp_corners - own_corners))
 
 
-def custom_score_3(game, player):
+def custom_score_3(game, player) -> float:
 	"""This heuristic uses custom_score's algorithm at the beginning and tries to play moves closer to the center near the end of the game.
 
 	Parameters
@@ -120,8 +121,9 @@ def custom_score_3(game, player):
 		return float(len(own_moves) - len(opp_moves))
 
 	else:
-		# Define center
-		center = (game.height / 2, game.width / 2)
+		# Define center as the half of height and width - 1
+		# (makes sense when we count from zero)
+		center = ((game.height - 1) / 2, (game.width - 1) / 2)
 
 		# Get positions
 		own_pos = game.get_player_location(player)
@@ -157,7 +159,7 @@ class IsolationPlayer:
 		positive value large enough to allow the function to return before the
 		timer expires.
 	"""
-	def __init__(self, search_depth=3, score_fn=custom_score_3, timeout=50.):
+	def __init__(self, search_depth=3, score_fn=custom_score_3, timeout=100.):
 		self.search_depth = search_depth
 		self.score = score_fn
 		self.time_left = None
