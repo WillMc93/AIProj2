@@ -77,15 +77,14 @@ def custom_score_2(game, player):
 
 	# Get the fraction of spaces available
 	# This allows us to prioritize central moves as the game progresses
-	game_state = game.width * game.height / len(game.get_blank_spaces())
+	game_state = min(game.width * game.height / len(game.get_blank_spaces()), 6)
 
 	# Return the difference in scores + the scaled difference in moves that result in corners.
 	return float(len(own_moves) - len(opp_moves) + game_state * (opp_corners - own_corners))
 
 
 def custom_score_3(game, player):
-	"""This heuristic increases the our own euclidean distance from the corners, and
-	increases our opponent's.
+	"""This heuristic uses custom_score's algorithm at the beginning and tries to play moves closer to the center near the end of the game.
 
 	Parameters
 	----------
@@ -108,42 +107,33 @@ def custom_score_3(game, player):
 	if game.is_winner(player):
 		return float('inf')
 
-	# Define the corners
-	corners = [(0, 0), (0, game.width - 1), (game.height - 1, 0), (game.height - 1, game.width - 1)]
+	# Get the fraction of board used.
+	used = len(game.get_blank_spaces()) / (game.width * game.height)
 
+	# Get number of each players moves
 	own_moves = game.get_legal_moves(player)
 	opp_moves = game.get_legal_moves(game.get_opponent(player))
 
-	own_score = 0
-	opp_score = 0
 
-	def get_euclid(moves):
-		if len(moves) == 0:
-			return 0
+	if len(own_moves) != len(opp_moves) or used < 0.75:
+		# Return the difference in moves
+		return float(len(own_moves) - len(opp_moves))
 
-		move_score_sum = 0
-		for move in moves:
-			move_score = 0
-			for corner in corners:
-				# Calculate the euclidean distnace from the corner
-				distance = abs(move[0] - corner[0]) ** 2 + abs(move[1] - corner[1]) ** 2
-				distance = distance ** 0.5
+	else:
+		# Define center
+		center = (game.height / 2, game.width / 2)
 
-				# Sum the distance
-				move_score += distance
+		# Get positions
+		own_pos = game.get_player_location(player)
+		opp_pos = game.get_player_location(game.get_opponent(player))
 
-			# Get sum of the average move_scores
-			move_score_sum += move_score / 4
+		# Get blocks away
+		own_dist = abs(center[0] - own_pos[0]) + abs(center[1] - own_pos[1])
+		opp_dist = abs(center[0] - opp_pos[0]) + abs(center[1] - opp_pos[1])
 
-		# Return average distance
-		return float(move_score_sum / len(moves))
+		# Return the distance in blocks
+		return float(opp_dist - own_dist)
 
-
-
-	own_score = get_euclid(own_moves)
-	opp_score = get_euclid(opp_moves)
-
-	return float(own_score - opp_score)
 
 class IsolationPlayer:
 	"""Base class for minimax and alphabeta agents -- this class is never
@@ -167,7 +157,7 @@ class IsolationPlayer:
 		positive value large enough to allow the function to return before the
 		timer expires.
 	"""
-	def __init__(self, search_depth=3, score_fn=custom_score_2, timeout=100.):
+	def __init__(self, search_depth=3, score_fn=custom_score_3, timeout=50.):
 		self.search_depth = search_depth
 		self.score = score_fn
 		self.time_left = None
@@ -264,15 +254,19 @@ class MinimaxPlayer(IsolationPlayer):
 		if not game.get_legal_moves():
 			return (-1, -1)
 
+
+		""" Helper Functions"""
 		def max_value(game, depth):
 			if self.time_left() < self.TIMER_THRESHOLD:
 				raise SearchTimeout()
 
+			# Terminal Test
 			if not game.get_legal_moves() or depth == 0:
 				return self.score(game, self)
 
 			score = float('-inf')
 			for move in game.get_legal_moves():
+				# Traverse the Tree for this move
 				score = max(score, min_value(game.forecast_move(move), depth-1))
 
 			return score
@@ -281,14 +275,18 @@ class MinimaxPlayer(IsolationPlayer):
 			if self.time_left() < self.TIMER_THRESHOLD:
 				raise SearchTimeout()
 
+			# Terminal Test
 			if not game.get_legal_moves() or depth == 0:
 				return self.score(game, self)
 
 			score = float('inf')
 			for move in game.get_legal_moves():
+				# Traverse the Tree for this move
 				score = min(score, max_value(game.forecast_move(move), depth-1))
 
 			return score
+
+		""" Function Proper """
 
 		# To keep track of the best score, move combo declare a tuple of (score, move)
 		besties = (float('-inf'), game.get_legal_moves()[0])
@@ -347,6 +345,7 @@ class AlphaBetaPlayer(IsolationPlayer):
 			return (-1, -1)
 		best_move = game.get_legal_moves()[0]
 
+		# Iterative deepening
 		depth = 1
 		try:
 			while True:
@@ -396,15 +395,18 @@ class AlphaBetaPlayer(IsolationPlayer):
 		if not game.get_legal_moves():
 			return (-1, -1)
 
+		"""Helper functions"""
 		def max_value(game, depth, alpha=float('-inf'), beta=float('inf')):
 			if self.time_left() < self.TIMER_THRESHOLD:
 				raise SearchTimeout()
 
+			# Terminal Test
 			if not game.get_legal_moves() or depth == 0:
 				return self.score(game, self)
 
 			score = float('-inf')
 			for move in game.get_legal_moves():
+				# Traverse tree for this move
 				score = max(score, min_value(game.forecast_move(move), depth-1, alpha=alpha, beta=beta))
 
 				if score >= beta:
@@ -418,11 +420,13 @@ class AlphaBetaPlayer(IsolationPlayer):
 			if self.time_left() < self.TIMER_THRESHOLD:
 				raise SearchTimeout()
 
+			# Terminal Test
 			if not game.get_legal_moves() or depth == 0:
 				return self.score(game, self)
 
 			score = float('inf')
 			for move in game.get_legal_moves():
+				# Traverse tree for this move
 				score = min(score, max_value(game.forecast_move(move), depth-1, alpha=alpha, beta=beta))
 
 				if score <= alpha:
@@ -431,6 +435,8 @@ class AlphaBetaPlayer(IsolationPlayer):
 				beta = min(beta, score)
 
 			return score
+
+		"""Function Proper"""
 
 		# To keep track of the best score, move combo declare a tuple of (score, move)
 		besties = (float('-inf'), (-1, -1))
@@ -441,7 +447,7 @@ class AlphaBetaPlayer(IsolationPlayer):
 			# Run search.
 			score = min_value(game.forecast_move(move), depth-1, alpha=alpha)
 
-			if score >= besties[0]:
+			if score > besties[0]:
 				besties = (score, move)
 
 			alpha = max(alpha, score)
